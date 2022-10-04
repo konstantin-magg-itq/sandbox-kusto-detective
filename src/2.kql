@@ -1,0 +1,18 @@
+// overall count
+Votes
+| summarize count()
+
+// anomaly by ip?
+Votes
+| summarize count() by via_ip
+| order by count_
+
+// anomaly by Timestamp?
+Votes
+| summarize count() by bin(Timestamp, 5m)
+
+// anomaly by hash?
+Votes
+| summarize count() by voter_hash_id
+| where count_ > 1
+| order by count_
