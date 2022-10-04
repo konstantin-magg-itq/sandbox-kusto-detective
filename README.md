@@ -1,0 +1,1 @@
+# sandbox-kusto-detective
