@@ -16,3 +16,18 @@ Votes
 | summarize count() by voter_hash_id
 | where count_ > 1
 | order by count_
+
+// broad exploration
+Votes
+| order by Timestamp asc 
+| limit 5000
+
+// 500 ms filter
+Votes
+| order by Timestamp asc
+// | where via_ip == "10.168.0.0"
+// | where Timestamp < datetime("2022-10-01 09:00:00")
+| summarize count() by bin(Timestamp, 0.5s), vote, via_ip
+| where count_ > 5
+// | summarize count() by via_ip, vote
+| summarize sum(count_)
