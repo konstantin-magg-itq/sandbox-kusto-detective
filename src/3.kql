@@ -1,0 +1,41 @@
+// check successfull import
+Traffic2
+| summarize count();
+
+// ---
+
+// all cars at location - 199 distinct cars
+Traffic2
+| where Timestamp >= datetime('2022-10-16 08:31:00') and Timestamp <= datetime('2022-10-16T08:40:00')
+| where Ave == 157 and Street == 148
+| distinct VIN
+| summarize count();
+
+// ---
+
+// final location per car - 199 locations
+let carsAtLocation = Traffic2
+| where Timestamp >= datetime('2022-10-16 08:31:00') and Timestamp <= datetime('2022-10-16T08:40:00')
+| where Ave == 157 and Street == 148
+| distinct VIN
+| project VIN;
+
+Traffic2
+| where VIN in (carsAtLocation)
+| summarize arg_max(Timestamp, *) by VIN
+| summarize count();
+
+// ---
+
+// final grouping + wrapping
+let carsAtLocation = Traffic2
+| where Timestamp >= datetime('2022-10-16 08:31:00') and Timestamp <= datetime('2022-10-16T08:40:00')
+| where Ave == 157 and Street == 148
+| distinct VIN
+| project VIN;
+
+Traffic2
+| where VIN in (carsAtLocation)
+| summarize arg_max(Timestamp, *) by VIN
+| summarize carCount=count() by Ave, Street
+| where carCount > 2; // there we go
