@@ -1,0 +1,86 @@
+// ----
+// Quiz 1 - about primes
+// ----
+
+// import
+.execute database script <|
+.create-merge table Primes (number:long)
+.ingest into table Primes (@'https://kustodetectiveagency.blob.core.windows.net/prime-numbers/prime-numbers.csv.gz')
+
+// explore data
+Primes
+| order by number 
+| limit 100
+
+// express the example: sum contains 13 and 19
+Primes
+| order by number asc 
+| extend previous = prev(number)
+| extend sum = number + previous + 1
+| limit 100
+
+// find primes in sum
+Primes
+| order by number desc 
+| extend previous = prev(number)
+| extend sum = number + previous + 1
+| where sum < 100000000
+| join (Primes) on $left.sum == $right.number
+| order by sum
+| limit 1000
+
+
+// ----
+// Quiz 2 - about trees
+// ----
+
+// count trees of interrest
+nyc_trees
+| where spc_common contains "Turkish hazelnut" or spc_common contains "'Schubert' chokecherry" or spc_common contains "American Linden" 
+| summarize count() by spc_common
+
+// American linden	        9458
+// 'Schubert' chokecherry	  3525
+// Turkish hazelnut	         214
+
+// render map
+nyc_trees
+| where spc_common contains "Turkish hazelnut" or spc_common contains "'Schubert' chokecherry"
+| project longitude, latitude
+| render scatterchart with (kind=map)
+
+// get hazelnut tree
+nyc_trees
+| where spc_common contains "'Schubert' chokecherry"
+| summarize count() by hash=geo_point_to_h3cell(longitude, latitude, 10)
+| where count_ == 4
+| join(
+  nyc_trees
+  | where spc_common contains "Turkish hazelnut"
+  | extend h3 = geo_point_to_h3cell(longitude, latitude, 10)
+) on $left.hash == $right.h3
+
+// render all relevant trees
+nyc_trees
+| where spc_common contains "Turkish hazelnut" or spc_common contains "'Schubert' chokecherry" or spc_common contains "American Linden" 
+| extend h3 = geo_point_to_h3cell(longitude, latitude, 10)
+| where h3 == '8a2a100dec9ffff'
+| project longitude, latitude, spc_common
+| render scatterchart with (kind=map)
+
+// get linden tree + url
+nyc_trees
+| where spc_common contains "American Linden" 
+| extend h3 = geo_point_to_h3cell(longitude, latitude, 10)
+| where h3 == '8a2a100dec9ffff'
+| extend url = strcat('https://www.google.com/maps/@', latitude, ',', longitude, ',4a,75y,32.0h,79.0t/data=!3m7!1e1!3m5!1s-1P!2e0!5s20191101T000000!7i16384!8i8192')
+| project url
+
+// ----
+// Quiz 3 - decrypt
+// ----
+
+print(
+  Decrypt(  '20INznpGzmkmK2NlZ0JILtO4OoYhOoYUB0OrOoTl5mJ3KgXrB0[8LTSSXUYhzUY8vmkyKUYevUYrDgYNK07yaf7soC3kKgMlOtHkLt[kZEclBtkyOoYwvtJGK2YevUY[v65iLtkeLEOhvtNlBtpizoY[v65yLdOkLEOhvtNlDn5lB07lOtJIDmllzmJ4vf7soCpiLdYIK0[eK27soleqO6keDpYp2CeH5d\\F\\fN6aQT6aQL[aQcUaQc[aQ57aQ5[aQDG',
+  'TODO'
+))
